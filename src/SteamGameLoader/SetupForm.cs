@@ -50,10 +50,10 @@ internal sealed class SetupForm : Form
         var rescanButton = new Button { Text = "Rescan", AutoSize = true };
         rescanButton.Click += (_, _) => RescanShortcuts();
 
-        var restoreButton = new Button { Text = "Restore Checked", AutoSize = true };
+        var restoreButton = new Button { Text = "Restore", AutoSize = true };
         restoreButton.Click += (_, _) => RestoreChecked();
 
-        var convertButton = new Button { Text = "Convert Checked", AutoSize = true };
+        var convertButton = new Button { Text = "Convert", AutoSize = true };
         convertButton.Click += (_, _) => ConvertChecked();
 
         buttonPanel.Controls.Add(rescanButton);
