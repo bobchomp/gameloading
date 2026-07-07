@@ -17,16 +17,26 @@ namespace SteamGameLoader;
 /// Some games (e.g. Cities: Skylines II via the Paradox Launcher) hand off to
 /// a separate launcher process first, which is what Steam's "Running" flag
 /// actually reacts to - the real game only starts afterwards. Once the flag
-/// flips on, this also watches for a second, different process to appear
-/// under the game's own install folder, and keeps the popup up until that
-/// process (or the original one, if there never was a separate launcher)
-/// shows a visible window.
+/// flips on, this watches for that first process's own window to appear:
+///  - if its exe name doesn't look like a launcher, that window IS the game,
+///    so the popup just closes.
+///  - if it does look like a launcher, the popup hides (the launcher has its
+///    own loading UI, so ours would be redundant) and watches quietly in the
+///    background for a second, different process to appear under the game's
+///    install folder. Once that shows up, the popup reappears and waits for
+///    that process's window before finally closing.
 /// </summary>
 internal sealed class LoadingForm : Form
 {
     private static readonly TimeSpan SafetyTimeout = TimeSpan.FromSeconds(90);
 
-    private enum WatchState { WaitingForHandoff, WaitingForRealGame }
+    private enum WatchState
+    {
+        WaitingForHandoff,
+        WaitingForLauncherWindow,
+        WaitingForRealGameProcess,
+        WaitingForRealGameWindow,
+    }
 
     private readonly uint _appId;
     private readonly Timer _pollTimer;
@@ -142,70 +152,101 @@ internal sealed class LoadingForm : Form
         {
             case WatchState.WaitingForHandoff:
                 if (SteamHelper.IsGameRunning(_appId))
-                    BeginWatchingForRealGame();
+                    BeginWaitingForLauncherWindow();
                 break;
 
-            case WatchState.WaitingForRealGame:
-                AdvanceRealGameWatch();
+            case WatchState.WaitingForLauncherWindow:
+                AdvanceWaitingForLauncherWindow();
+                break;
+
+            case WatchState.WaitingForRealGameProcess:
+                AdvanceWaitingForRealGameProcess();
+                break;
+
+            case WatchState.WaitingForRealGameWindow:
+                AdvanceWaitingForRealGameWindow();
                 break;
         }
     }
 
-    private void BeginWatchingForRealGame()
+    private void BeginWaitingForLauncherWindow()
     {
         _installDir = SteamHelper.TryGetInstallDir(_appId);
-        if (_installDir is null)
+        _initialPids = _installDir is not null ? GameProcessWatcher.SnapshotPidsUnder(_installDir) : new HashSet<int>();
+        if (_installDir is null || _initialPids.Count == 0)
         {
-            // Can't tell where the game lives, so there's no way to watch for a
-            // launcher handoff - fall back to the original, simpler behavior.
+            // Can't tell where the game lives, or nothing showed up there yet -
+            // there's no way to watch for a launcher handoff, so fall back to
+            // the original, simpler behavior.
             Close();
             return;
         }
 
-        _initialPids = GameProcessWatcher.SnapshotPidsUnder(_installDir);
         _phaseStartedAt = DateTime.UtcNow;
-        _state = WatchState.WaitingForRealGame;
+        _state = WatchState.WaitingForLauncherWindow;
         _titleLabel.Text = "Starting game…";
     }
 
-    private void AdvanceRealGameWatch()
+    private void AdvanceWaitingForLauncherWindow()
     {
-        if (_gamePid is int pid)
-        {
-            if (!GameProcessWatcher.IsRunning(pid) || GameProcessWatcher.HasVisibleWindow(pid))
-                Close();
-            return;
-        }
-
+        // A different process already showing up means the hand-off happened
+        // before the first process ever displayed a window of its own.
         int? newPid = GameProcessWatcher.FindNewPidUnder(_installDir!, _initialPids);
         if (newPid is int found)
         {
-            // A different process just appeared under the game's own install
-            // folder - that's the launcher handing off to the real game.
-            _gamePid = found;
+            BeginWaitingForRealGameWindow(found);
             return;
         }
 
-        bool anyLookLikeLauncher = false;
-        foreach (int initialPid in _initialPids)
+        int? pidWithWindow = FindPidWithWindow(_initialPids);
+        if (pidWithWindow is not int pid)
+            return;
+
+        if (!GameProcessWatcher.LooksLikeLauncher(pid))
         {
-            if (GameProcessWatcher.LooksLikeLauncher(initialPid))
-            {
-                anyLookLikeLauncher = true;
-                break;
-            }
+            // No separate launcher involved - that window IS the game.
+            Close();
+            return;
         }
 
-        if (!anyLookLikeLauncher && _initialPids.Count > 0)
+        // The launcher's own window is up, with its own loading UI - hide ours
+        // and watch quietly in the background for it handing off to the game.
+        Hide();
+        _phaseStartedAt = DateTime.UtcNow;
+        _state = WatchState.WaitingForRealGameProcess;
+    }
+
+    private void AdvanceWaitingForRealGameProcess()
+    {
+        int? newPid = GameProcessWatcher.FindNewPidUnder(_installDir!, _initialPids);
+        if (newPid is int found)
+            BeginWaitingForRealGameWindow(found);
+    }
+
+    private void BeginWaitingForRealGameWindow(int gamePid)
+    {
+        _gamePid = gamePid;
+        _phaseStartedAt = DateTime.UtcNow;
+        _state = WatchState.WaitingForRealGameWindow;
+        _titleLabel.Text = "Finishing launch…";
+        Show();
+    }
+
+    private void AdvanceWaitingForRealGameWindow()
+    {
+        if (_gamePid is int pid && (!GameProcessWatcher.IsRunning(pid) || GameProcessWatcher.HasVisibleWindow(pid)))
+            Close();
+    }
+
+    private static int? FindPidWithWindow(IEnumerable<int> pids)
+    {
+        foreach (int pid in pids)
         {
-            // Nothing here looks like a launcher, so assume there isn't one and
-            // the process Steam already started is the game itself.
-            foreach (int initialPid in _initialPids)
-            {
-                _gamePid = initialPid;
-                break;
-            }
+            if (GameProcessWatcher.HasVisibleWindow(pid))
+                return pid;
         }
+
+        return null;
     }
 
     protected override void OnLoad(EventArgs e)

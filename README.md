@@ -32,12 +32,17 @@ shortcut and the game window appearing.
    Launcher) hand off to a separate launcher process first, which is what
    Steam's `Running` flag actually reacts to — the real game only starts
    afterwards. Once the flag flips on, the popup snapshots which processes
-   are already running under that game's install folder, then watches for
-   either a *different* new process to show up there (the launcher handing
-   off to the real game) or, if nothing there looks like a launcher by name,
-   for that original process's own window. Either way, it closes once that
-   process actually shows a visible window, not just when Steam considers it
-   "running".
+   are already running under that game's install folder and waits for that
+   first process's own window to appear:
+   - if its exe name doesn't look like a launcher, that window *is* the game,
+     so the popup simply closes there.
+   - if it does look like a launcher, the popup **hides** instead (the
+     launcher already has its own loading UI, so a second one on top would
+     be redundant) and keeps watching quietly in the background for a
+     *different* new process to show up under that same install folder —
+     the launcher handing off to the real game. Once that appears, the
+     popup **reappears** and waits for that process's own window before
+     finally closing.
 5. **Safety net:** the popup also has a Cancel button and auto-closes after
    90 seconds per stage regardless, so it can never get stuck open if
    detection doesn't fire (e.g. Steam is offline, or the app id is wrong).
