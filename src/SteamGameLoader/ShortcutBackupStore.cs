@@ -13,12 +13,22 @@ internal sealed class ShortcutBackupStore
 {
     public sealed class BackupEntry
     {
+        public bool WasUrlShortcut { get; set; }
+        public string? UrlRawContent { get; set; }
+
         public string TargetPath { get; set; } = "";
         public string Arguments { get; set; } = "";
         public string IconLocation { get; set; } = "";
         public int IconIndex { get; set; }
         public string WorkingDirectory { get; set; } = "";
     }
+
+    /// <summary>
+    /// Stable key across a .url -&gt; .lnk conversion (or back), since the file
+    /// extension - and so the full path - changes when we convert/restore.
+    /// </summary>
+    public static string KeyFor(string shortcutPath) =>
+        Path.Combine(Path.GetDirectoryName(shortcutPath) ?? "", Path.GetFileNameWithoutExtension(shortcutPath));
 
     private readonly string _path;
     private readonly Dictionary<string, BackupEntry> _entries;
@@ -58,19 +68,19 @@ internal sealed class ShortcutBackupStore
         File.WriteAllText(_path, json);
     }
 
-    public bool Has(string lnkPath) => _entries.ContainsKey(lnkPath);
+    public bool Has(string key) => _entries.ContainsKey(key);
 
-    public BackupEntry? Get(string lnkPath) => _entries.TryGetValue(lnkPath, out var entry) ? entry : null;
+    public BackupEntry? Get(string key) => _entries.TryGetValue(key, out var entry) ? entry : null;
 
-    public void Record(string lnkPath, BackupEntry entry)
+    public void Record(string key, BackupEntry entry)
     {
-        _entries[lnkPath] = entry;
+        _entries[key] = entry;
         Save();
     }
 
-    public void Remove(string lnkPath)
+    public void Remove(string key)
     {
-        if (_entries.Remove(lnkPath))
+        if (_entries.Remove(key))
             Save();
     }
 }
