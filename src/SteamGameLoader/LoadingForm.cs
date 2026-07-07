@@ -35,6 +35,8 @@ internal sealed class LoadingForm : Form
         ShowInTaskbar = true;
         KeyPreview = true;
         Text = "Game Loading";
+        if (AppIcon.TryLoad() is Icon appIcon)
+            Icon = appIcon;
 
         var spinner = new SpinnerControl { Size = new Size(48, 48), Location = new Point(24, 28) };
 

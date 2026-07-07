@@ -12,6 +12,7 @@
     <Product>Steam Loading Popups</Product>
     <Version>1.0.0</Version>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

@@ -21,6 +21,8 @@ internal sealed class SetupForm : Form
         ClientSize = new System.Drawing.Size(560, 420);
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new System.Drawing.Size(480, 320);
+        if (AppIcon.TryLoad() is System.Drawing.Icon appIcon)
+            Icon = appIcon;
 
         var instructions = new Label
         {
