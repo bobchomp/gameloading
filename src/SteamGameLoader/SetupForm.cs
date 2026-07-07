@@ -105,6 +105,7 @@ internal sealed class SetupForm : Form
             }
         }
 
+        ShellNotify.RefreshDesktopIcons();
         RescanShortcuts();
         MessageBox.Show(this, $"Converted {count} shortcut(s) to use the Game Loading popup.",
             "Done", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -127,6 +128,7 @@ internal sealed class SetupForm : Form
             }
         }
 
+        ShellNotify.RefreshDesktopIcons();
         RescanShortcuts();
         MessageBox.Show(this, $"Restored {count} shortcut(s) to their original target.",
             "Done", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -199,6 +201,14 @@ internal sealed class SetupForm : Form
             ? Path.ChangeExtension(shortcut.ShortcutPath, ".lnk")
             : shortcut.ShortcutPath;
 
+        // Delete the old file *before* creating the new one: if both briefly
+        // exist together, Explorer's live Desktop view can end up caching a
+        // spurious "Name (2)" ghost icon for whichever one it detected second.
+        if (shortcut.IsUrlShortcut && !string.Equals(lnkPath, shortcut.ShortcutPath, StringComparison.OrdinalIgnoreCase))
+        {
+            File.Delete(shortcut.ShortcutPath);
+        }
+
         ShellLinkHelper.Write(
             lnkPath,
             targetPath: Application.ExecutablePath,
@@ -206,11 +216,6 @@ internal sealed class SetupForm : Form
             iconLocation: iconLocation,
             iconIndex: iconIndex,
             workingDirectory: Path.GetDirectoryName(Application.ExecutablePath) ?? "");
-
-        if (shortcut.IsUrlShortcut && !string.Equals(lnkPath, shortcut.ShortcutPath, StringComparison.OrdinalIgnoreCase))
-        {
-            File.Delete(shortcut.ShortcutPath);
-        }
     }
 
     private void RestoreShortcut(DetectedShortcut shortcut)
@@ -223,13 +228,14 @@ internal sealed class SetupForm : Form
         if (backup.WasUrlShortcut)
         {
             string urlPath = Path.ChangeExtension(shortcut.ShortcutPath, ".url");
-            File.WriteAllText(urlPath, backup.UrlRawContent ?? "");
 
             if (!string.Equals(urlPath, shortcut.ShortcutPath, StringComparison.OrdinalIgnoreCase) &&
                 File.Exists(shortcut.ShortcutPath))
             {
                 File.Delete(shortcut.ShortcutPath);
             }
+
+            File.WriteAllText(urlPath, backup.UrlRawContent ?? "");
         }
         else
         {
