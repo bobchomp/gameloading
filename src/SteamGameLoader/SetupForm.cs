@@ -17,10 +17,12 @@ internal sealed class SetupForm : Form
 
     public SetupForm()
     {
-        Text = "Steam Game Loading Popup - Setup";
+        Text = "Steam Loading Popups";
         ClientSize = new System.Drawing.Size(560, 420);
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new System.Drawing.Size(480, 320);
+        if (AppIcon.TryLoad() is System.Drawing.Icon appIcon)
+            Icon = appIcon;
 
         var instructions = new Label
         {
@@ -50,10 +52,10 @@ internal sealed class SetupForm : Form
         var rescanButton = new Button { Text = "Rescan", AutoSize = true };
         rescanButton.Click += (_, _) => RescanShortcuts();
 
-        var restoreButton = new Button { Text = "Restore Checked", AutoSize = true };
+        var restoreButton = new Button { Text = "Restore", AutoSize = true };
         restoreButton.Click += (_, _) => RestoreChecked();
 
-        var convertButton = new Button { Text = "Convert Checked", AutoSize = true };
+        var convertButton = new Button { Text = "Convert", AutoSize = true };
         convertButton.Click += (_, _) => ConvertChecked();
 
         buttonPanel.Controls.Add(rescanButton);

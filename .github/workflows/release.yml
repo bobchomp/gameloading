@@ -79,7 +79,7 @@ jobs:
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           files: installer/output/*.exe
-          name: Steam Game Loading Popup ${{ steps.version.outputs.version }}
+          name: Steam Loading Popups ${{ steps.version.outputs.version }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
