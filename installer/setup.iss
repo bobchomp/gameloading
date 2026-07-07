@@ -29,6 +29,12 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Files]
 Source: "..\publish\SteamGameLoader.exe"; DestDir: "{app}"; Flags: ignoreversion
 
+[InstallDelete]
+; Remove Start Menu shortcuts from older versions that used different names -
+; Inno Setup doesn't rename/replace these on its own during an upgrade.
+Type: files; Name: "{group}\Set Up Game Loading Shortcuts.lnk"
+Type: files; Name: "{group}\Uninstall Steam Game Loading Popup.lnk"
+
 [Icons]
 Name: "{group}\Steam Loading Popups"; Filename: "{app}\{#MyAppExeName}"
 Name: "{group}\Uninstall Steam Loading Popups"; Filename: "{uninstallexe}"
