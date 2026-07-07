@@ -10,10 +10,15 @@ shortcut and the game window appearing.
 1. **Setup (one-time):** run the app with no arguments (Start Menu shortcut
    "Set Up Game Loading Shortcuts", installed alongside it) to open the setup
    tool. It scans your Desktop for existing Steam game shortcuts (the ones
-   Steam creates via *right-click a game → Manage → Add desktop shortcut*),
-   and lets you convert the ones you want. Converting a shortcut rewrites its
-   target to point at this app with the game's App ID, while keeping the same
-   name and icon. The original target is backed up so you can restore it
+   Steam creates via *right-click a game → Manage → Add desktop shortcut*) —
+   whether that's a `.url` Internet Shortcut (`steam://rungameid/<id>`), a
+   `.lnk` pointing at `steam.exe -applaunch <id>`, or a `.lnk` pointing
+   straight at the game's `.exe` (the App ID is then recovered by matching the
+   exe's folder against Steam's own `appmanifest_*.acf` files) — and lets you
+   convert the ones you want. Converting a shortcut rewrites it to point at
+   this app with the game's App ID instead, while keeping the same name and
+   icon (a `.url` shortcut becomes a `.lnk`, since only `.lnk` files can pass
+   arguments to a program). The original is backed up so you can restore it
    later from the same setup tool.
 2. **Launch:** double-click a converted shortcut. The app immediately starts
    the game via `steam://rungameid/<appid>` and shows the loading popup.
@@ -50,10 +55,17 @@ iscc "/DMyAppVersion=1.0.0" installer\setup.iss
 
 Push a tag like `v1.0.0` and the `Build and Release` workflow
 (`.github/workflows/release.yml`) will build the app, compile the Inno Setup
-installer, and attach `SteamGameLoadingPopup-Setup.exe` to a new GitHub
-Release automatically. The workflow can also be run manually
-(`workflow_dispatch`) with a custom version number, which uploads a build
-artifact without creating a release.
+installer, and attach `SteamGameLoadingPopup-Setup.exe` to a GitHub Release
+for that tag automatically (creating the release if it doesn't exist yet, or
+updating it - e.g. adding the asset - if it does).
+
+You can also trigger it manually from the Actions tab (`workflow_dispatch`)
+and type a version number (e.g. `1.0.0`) into the "Run workflow" box - this
+does exactly the same create-or-update against a release with that tag name,
+which is handy if you already created the release by hand from the GitHub UI.
+Leaving the version box at its default `0.0.0-dev` just builds and uploads a
+throwaway build artifact, without touching any release - useful for
+verifying the app still compiles without publishing anything.
 
 ## Limitations
 

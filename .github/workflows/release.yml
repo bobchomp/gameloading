@@ -28,11 +28,16 @@ jobs:
         shell: pwsh
         run: |
           if ("${{ github.ref_type }}" -eq "tag") {
-            $version = "${{ github.ref_name }}" -replace '^v', ''
+            # Use the pushed tag name verbatim (e.g. "v1.0.0" or "1.0.0") so the
+            # release we create/update below lines up with the tag that triggered it.
+            $tag = "${{ github.ref_name }}"
+            $version = $tag -replace '^v', ''
           } else {
-            $version = "${{ github.event.inputs.version }}"
-            if ([string]::IsNullOrWhiteSpace($version)) { $version = "0.0.0-dev" }
+            $tag = "${{ github.event.inputs.version }}"
+            if ([string]::IsNullOrWhiteSpace($tag)) { $tag = "0.0.0-dev" }
+            $version = $tag -replace '^v', ''
           }
+          echo "tag=$tag" >> $env:GITHUB_OUTPUT
           echo "version=$version" >> $env:GITHUB_OUTPUT
 
       - name: Publish self-contained executable
@@ -61,10 +66,15 @@ jobs:
           name: SteamGameLoadingPopup-Setup
           path: installer/output/*.exe
 
-      - name: Create GitHub Release
-        if: github.ref_type == 'tag'
+      - name: Create or update GitHub Release
+        # Runs for an actual tag push AND for a manually-typed workflow_dispatch
+        # version, so "Run workflow" with a real version number also publishes/
+        # updates that release - skipped only for the default placeholder used
+        # to just test that the build compiles.
+        if: steps.version.outputs.tag != '0.0.0-dev'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
           files: installer/output/*.exe
           name: Steam Game Loading Popup ${{ steps.version.outputs.version }}
           generate_release_notes: true

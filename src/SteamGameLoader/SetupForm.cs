@@ -117,7 +117,7 @@ internal sealed class SetupForm : Form
         {
             try
             {
-                RestoreShortcut(shortcut.LnkPath);
+                RestoreShortcut(shortcut);
                 count++;
             }
             catch (Exception ex)
@@ -146,40 +146,97 @@ internal sealed class SetupForm : Form
 
     private void ConvertShortcut(DetectedShortcut shortcut)
     {
-        if (!_backupStore.Has(shortcut.LnkPath))
+        string key = ShortcutBackupStore.KeyFor(shortcut.ShortcutPath);
+
+        if (!_backupStore.Has(key))
         {
-            ShellLinkHelper.ShortcutInfo original = ShellLinkHelper.Read(shortcut.LnkPath);
-            _backupStore.Record(shortcut.LnkPath, new ShortcutBackupStore.BackupEntry
+            if (shortcut.IsUrlShortcut)
             {
-                TargetPath = original.TargetPath,
-                Arguments = original.Arguments,
-                IconLocation = original.IconLocation,
-                IconIndex = original.IconIndex,
-                WorkingDirectory = original.WorkingDirectory,
-            });
+                _backupStore.Record(key, new ShortcutBackupStore.BackupEntry
+                {
+                    WasUrlShortcut = true,
+                    UrlRawContent = File.ReadAllText(shortcut.ShortcutPath),
+                });
+            }
+            else
+            {
+                ShellLinkHelper.ShortcutInfo original = ShellLinkHelper.Read(shortcut.ShortcutPath);
+                _backupStore.Record(key, new ShortcutBackupStore.BackupEntry
+                {
+                    WasUrlShortcut = false,
+                    TargetPath = original.TargetPath,
+                    Arguments = original.Arguments,
+                    IconLocation = original.IconLocation,
+                    IconIndex = original.IconIndex,
+                    WorkingDirectory = original.WorkingDirectory,
+                });
+            }
         }
 
-        ShortcutBackupStore.BackupEntry backup = _backupStore.Get(shortcut.LnkPath)!;
-        string iconLocation = !string.IsNullOrEmpty(backup.IconLocation) ? backup.IconLocation : backup.TargetPath;
-        int iconIndex = !string.IsNullOrEmpty(backup.IconLocation) ? backup.IconIndex : 0;
+        ShortcutBackupStore.BackupEntry backup = _backupStore.Get(key)!;
+
+        string iconLocation;
+        int iconIndex;
+        if (shortcut.IsUrlShortcut && !string.IsNullOrEmpty(shortcut.UrlIconFile))
+        {
+            iconLocation = shortcut.UrlIconFile;
+            iconIndex = shortcut.UrlIconIndex;
+        }
+        else if (!shortcut.IsUrlShortcut && !string.IsNullOrEmpty(backup.IconLocation))
+        {
+            iconLocation = backup.IconLocation;
+            iconIndex = backup.IconIndex;
+        }
+        else
+        {
+            iconLocation = SteamHelper.GetSteamInstallPath() is string steamPath
+                ? Path.Combine(steamPath, "steam.exe")
+                : Application.ExecutablePath;
+            iconIndex = 0;
+        }
+
+        string lnkPath = shortcut.IsUrlShortcut
+            ? Path.ChangeExtension(shortcut.ShortcutPath, ".lnk")
+            : shortcut.ShortcutPath;
 
         ShellLinkHelper.Write(
-            shortcut.LnkPath,
+            lnkPath,
             targetPath: Application.ExecutablePath,
             arguments: shortcut.AppId.ToString(),
             iconLocation: iconLocation,
             iconIndex: iconIndex,
             workingDirectory: Path.GetDirectoryName(Application.ExecutablePath) ?? "");
+
+        if (shortcut.IsUrlShortcut && !string.Equals(lnkPath, shortcut.ShortcutPath, StringComparison.OrdinalIgnoreCase))
+        {
+            File.Delete(shortcut.ShortcutPath);
+        }
     }
 
-    private void RestoreShortcut(string lnkPath)
+    private void RestoreShortcut(DetectedShortcut shortcut)
     {
-        ShortcutBackupStore.BackupEntry? backup = _backupStore.Get(lnkPath);
+        string key = ShortcutBackupStore.KeyFor(shortcut.ShortcutPath);
+        ShortcutBackupStore.BackupEntry? backup = _backupStore.Get(key);
         if (backup is null)
             return;
 
-        ShellLinkHelper.Write(
-            lnkPath, backup.TargetPath, backup.Arguments, backup.IconLocation, backup.IconIndex, backup.WorkingDirectory);
-        _backupStore.Remove(lnkPath);
+        if (backup.WasUrlShortcut)
+        {
+            string urlPath = Path.ChangeExtension(shortcut.ShortcutPath, ".url");
+            File.WriteAllText(urlPath, backup.UrlRawContent ?? "");
+
+            if (!string.Equals(urlPath, shortcut.ShortcutPath, StringComparison.OrdinalIgnoreCase) &&
+                File.Exists(shortcut.ShortcutPath))
+            {
+                File.Delete(shortcut.ShortcutPath);
+            }
+        }
+        else
+        {
+            ShellLinkHelper.Write(
+                shortcut.ShortcutPath, backup.TargetPath, backup.Arguments, backup.IconLocation, backup.IconIndex, backup.WorkingDirectory);
+        }
+
+        _backupStore.Remove(key);
     }
 }

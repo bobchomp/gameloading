@@ -52,6 +52,63 @@ internal static class SteamHelper
         return null;
     }
 
+    /// <summary>
+    /// Fallback for shortcuts that point straight at a game's .exe with no
+    /// steam:// or -applaunch reference at all. If the exe lives under a Steam
+    /// library's "steamapps\common\&lt;installdir&gt;" folder, match that install
+    /// dir against every appmanifest_*.acf to recover the app id.
+    /// </summary>
+    public static uint? TryResolveAppIdFromExePath(string exePath)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(exePath))
+                return null;
+
+            string? steamPath = GetSteamInstallPath();
+            if (steamPath is null)
+                return null;
+
+            string normalizedExePath = exePath.Replace('/', '\\');
+            const string marker = @"\steamapps\common\";
+            int commonIndex = normalizedExePath.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+            if (commonIndex < 0)
+                return null;
+
+            string afterCommon = normalizedExePath[(commonIndex + marker.Length)..];
+            int nextSep = afterCommon.IndexOf('\\');
+            string installDir = nextSep >= 0 ? afterCommon[..nextSep] : afterCommon;
+            if (installDir.Length == 0)
+                return null;
+
+            foreach (string libraryFolder in GetLibraryFolders(steamPath))
+            {
+                string steamAppsDir = Path.Combine(libraryFolder, "steamapps");
+                if (!Directory.Exists(steamAppsDir))
+                    continue;
+
+                foreach (string manifestPath in Directory.EnumerateFiles(steamAppsDir, "appmanifest_*.acf"))
+                {
+                    string content = File.ReadAllText(manifestPath);
+                    Match installMatch = Regex.Match(content, "\"installdir\"\\s*\"([^\"]*)\"");
+                    if (!installMatch.Success ||
+                        !string.Equals(installMatch.Groups[1].Value, installDir, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    string idPart = Path.GetFileNameWithoutExtension(manifestPath).Replace("appmanifest_", "");
+                    if (uint.TryParse(idPart, out uint appId))
+                        return appId;
+                }
+            }
+        }
+        catch
+        {
+            // Best effort only.
+        }
+
+        return null;
+    }
+
     public static string? GetSteamInstallPath()
     {
         using RegistryKey? hkcu = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam");
