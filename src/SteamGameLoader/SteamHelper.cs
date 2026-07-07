@@ -109,6 +109,42 @@ internal static class SteamHelper
         return null;
     }
 
+    /// <summary>
+    /// Full path to a game's install folder (steamapps\common\&lt;installdir&gt;),
+    /// used to watch for a launcher handing off to the game's real process.
+    /// </summary>
+    public static string? TryGetInstallDir(uint appId)
+    {
+        try
+        {
+            string? steamPath = GetSteamInstallPath();
+            if (steamPath is null)
+                return null;
+
+            foreach (string libraryFolder in GetLibraryFolders(steamPath))
+            {
+                string manifestPath = Path.Combine(libraryFolder, "steamapps", $"appmanifest_{appId}.acf");
+                if (!File.Exists(manifestPath))
+                    continue;
+
+                string content = File.ReadAllText(manifestPath);
+                Match match = Regex.Match(content, "\"installdir\"\\s*\"([^\"]*)\"");
+                if (!match.Success)
+                    continue;
+
+                string installDir = Path.Combine(libraryFolder, "steamapps", "common", match.Groups[1].Value);
+                if (Directory.Exists(installDir))
+                    return installDir;
+            }
+        }
+        catch
+        {
+            // Best effort only.
+        }
+
+        return null;
+    }
+
     public static string? GetSteamInstallPath()
     {
         using RegistryKey? hkcu = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam");

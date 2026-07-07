@@ -25,12 +25,22 @@ shortcut and the game window appearing.
 3. **Detection:** Steam itself sets
    `HKCU\Software\Valve\Steam\Apps\<appid>\Running = 1` the instant it hands
    off to the game (and back to `0` when it exits). The popup polls that flag
-   twice a second and closes as soon as it flips to `1` — this works for any
-   game without needing to know its actual `.exe` name, and also covers cold
-   starts where Steam itself has to launch first.
-4. **Safety net:** the popup also has a Cancel button and auto-closes after
-   90 seconds regardless, so it can never get stuck open if detection doesn't
-   fire (e.g. Steam is offline, or the app id is wrong).
+   twice a second — this works for any game without needing to know its
+   actual `.exe` name, and also covers cold starts where Steam itself has to
+   launch first.
+4. **Launcher handoff:** some games (e.g. Cities: Skylines II via the Paradox
+   Launcher) hand off to a separate launcher process first, which is what
+   Steam's `Running` flag actually reacts to — the real game only starts
+   afterwards. Once the flag flips on, the popup snapshots which processes
+   are already running under that game's install folder, then watches for
+   either a *different* new process to show up there (the launcher handing
+   off to the real game) or, if nothing there looks like a launcher by name,
+   for that original process's own window. Either way, it closes once that
+   process actually shows a visible window, not just when Steam considers it
+   "running".
+5. **Safety net:** the popup also has a Cancel button and auto-closes after
+   90 seconds per stage regardless, so it can never get stuck open if
+   detection doesn't fire (e.g. Steam is offline, or the app id is wrong).
 
 ## Installing
 
@@ -71,6 +81,9 @@ verifying the app still compiles without publishing anything.
 
 - Windows only, and only wraps *existing* Steam desktop shortcuts — it does
   not intercept launches from inside the Steam client itself.
-- For games that hand off to a separate launcher or anti-cheat process before
-  the actual game starts, Steam's `Running` flag (and so the popup) may close
-  slightly before the game's own window appears.
+- The launcher-handoff detection is a heuristic, not a guaranteed signal: it
+  assumes the real game process appears somewhere under the same Steam
+  install folder as the launcher, and identifies likely launcher processes
+  by their exe name containing "launcher". Games that install the real game
+  elsewhere, or whose launcher exe doesn't match that naming pattern, may
+  still see the popup close a little early.

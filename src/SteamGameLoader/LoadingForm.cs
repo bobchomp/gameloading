@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -10,16 +11,33 @@ namespace SteamGameLoader;
 
 /// <summary>
 /// The "Game Loading..." popup. Launches the Steam game, then polls Steam's own
-/// "Running" registry flag every 500ms and closes itself as soon as the game
-/// actually starts, with a safety-net timeout and a manual Cancel button.
+/// "Running" registry flag every 500ms and closes itself once the game has
+/// actually started, with a safety-net timeout and a manual Cancel button.
+///
+/// Some games (e.g. Cities: Skylines II via the Paradox Launcher) hand off to
+/// a separate launcher process first, which is what Steam's "Running" flag
+/// actually reacts to - the real game only starts afterwards. Once the flag
+/// flips on, this also watches for a second, different process to appear
+/// under the game's own install folder, and keeps the popup up until that
+/// process (or the original one, if there never was a separate launcher)
+/// shows a visible window.
 /// </summary>
 internal sealed class LoadingForm : Form
 {
     private static readonly TimeSpan SafetyTimeout = TimeSpan.FromSeconds(90);
 
+    private enum WatchState { WaitingForHandoff, WaitingForRealGame }
+
     private readonly uint _appId;
     private readonly Timer _pollTimer;
-    private readonly DateTime _startedAt = DateTime.UtcNow;
+    private readonly Label _titleLabel;
+
+    private WatchState _state = WatchState.WaitingForHandoff;
+    private DateTime _phaseStartedAt = DateTime.UtcNow;
+    private string? _installDir;
+    private HashSet<int> _initialPids = new();
+    private int? _gamePid;
+
     private Point _dragStart;
     private bool _dragging;
 
@@ -42,7 +60,7 @@ internal sealed class LoadingForm : Form
 
         string gameName = SteamHelper.TryGetGameName(appId) ?? $"Steam game (AppID {appId})";
 
-        var titleLabel = new Label
+        _titleLabel = new Label
         {
             Text = "Launching…",
             ForeColor = Color.White,
@@ -75,7 +93,7 @@ internal sealed class LoadingForm : Form
         cancelButton.Click += (_, _) => Close();
 
         Controls.Add(spinner);
-        Controls.Add(titleLabel);
+        Controls.Add(_titleLabel);
         Controls.Add(subtitleLabel);
         Controls.Add(cancelButton);
 
@@ -114,15 +132,79 @@ internal sealed class LoadingForm : Form
 
     private void PollTimer_Tick(object? sender, EventArgs e)
     {
-        if (SteamHelper.IsGameRunning(_appId))
+        if (DateTime.UtcNow - _phaseStartedAt > SafetyTimeout)
         {
             Close();
             return;
         }
 
-        if (DateTime.UtcNow - _startedAt > SafetyTimeout)
+        switch (_state)
         {
+            case WatchState.WaitingForHandoff:
+                if (SteamHelper.IsGameRunning(_appId))
+                    BeginWatchingForRealGame();
+                break;
+
+            case WatchState.WaitingForRealGame:
+                AdvanceRealGameWatch();
+                break;
+        }
+    }
+
+    private void BeginWatchingForRealGame()
+    {
+        _installDir = SteamHelper.TryGetInstallDir(_appId);
+        if (_installDir is null)
+        {
+            // Can't tell where the game lives, so there's no way to watch for a
+            // launcher handoff - fall back to the original, simpler behavior.
             Close();
+            return;
+        }
+
+        _initialPids = GameProcessWatcher.SnapshotPidsUnder(_installDir);
+        _phaseStartedAt = DateTime.UtcNow;
+        _state = WatchState.WaitingForRealGame;
+        _titleLabel.Text = "Starting game…";
+    }
+
+    private void AdvanceRealGameWatch()
+    {
+        if (_gamePid is int pid)
+        {
+            if (!GameProcessWatcher.IsRunning(pid) || GameProcessWatcher.HasVisibleWindow(pid))
+                Close();
+            return;
+        }
+
+        int? newPid = GameProcessWatcher.FindNewPidUnder(_installDir!, _initialPids);
+        if (newPid is int found)
+        {
+            // A different process just appeared under the game's own install
+            // folder - that's the launcher handing off to the real game.
+            _gamePid = found;
+            return;
+        }
+
+        bool anyLookLikeLauncher = false;
+        foreach (int initialPid in _initialPids)
+        {
+            if (GameProcessWatcher.LooksLikeLauncher(initialPid))
+            {
+                anyLookLikeLauncher = true;
+                break;
+            }
+        }
+
+        if (!anyLookLikeLauncher && _initialPids.Count > 0)
+        {
+            // Nothing here looks like a launcher, so assume there isn't one and
+            // the process Steam already started is the game itself.
+            foreach (int initialPid in _initialPids)
+            {
+                _gamePid = initialPid;
+                break;
+            }
         }
     }
 
