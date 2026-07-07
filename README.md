@@ -1,4 +1,4 @@
-# Steam Game Loading Popup
+# Steam Loading Popups
 
 Shows a "Game Loading…" popup with a spinner the moment you launch a game from
 its Steam desktop shortcut, and closes itself automatically as soon as the
@@ -8,7 +8,7 @@ shortcut and the game window appearing.
 ## How it works
 
 1. **Setup (one-time):** run the app with no arguments (Start Menu shortcut
-   "Set Up Game Loading Shortcuts", installed alongside it) to open the setup
+   "Steam Loading Popups", installed alongside it) to open the setup
    tool. It scans your Desktop for existing Steam game shortcuts (the ones
    Steam creates via *right-click a game → Manage → Add desktop shortcut*) —
    whether that's a `.url` Internet Shortcut (`steam://rungameid/<id>`), a

@@ -17,7 +17,7 @@ internal sealed class SetupForm : Form
 
     public SetupForm()
     {
-        Text = "Steam Game Loading Popup - Setup";
+        Text = "Steam Loading Popups";
         ClientSize = new System.Drawing.Size(560, 420);
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new System.Drawing.Size(480, 320);
