@@ -31,6 +31,14 @@ shortcut and the game window appearing.
 4. **Safety net:** the popup also has a Cancel button and auto-closes after
    90 seconds regardless, so it can never get stuck open if detection doesn't
    fire (e.g. Steam is offline, or the app id is wrong).
+5. **Pin to Taskbar (optional):** check an already-converted shortcut in the
+   setup tool and click "Pin to Taskbar" to pin it straight to the taskbar,
+   same as pinning any other program - it launches through the loading popup
+   just like the Desktop shortcut. This uses an old, unsupported Explorer
+   shell verb, so it may not work on every Windows version; if it doesn't,
+   right-click the converted Desktop shortcut yourself and choose "Pin to
+   taskbar" (under "Show more options" on Windows 11) - that always works,
+   since it's just a normal shortcut pointing at this app.
 
 ## Installing
 

@@ -18,9 +18,9 @@ internal sealed class SetupForm : Form
     public SetupForm()
     {
         Text = "Steam Loading Popups";
-        ClientSize = new System.Drawing.Size(560, 420);
+        ClientSize = new System.Drawing.Size(640, 420);
         StartPosition = FormStartPosition.CenterScreen;
-        MinimumSize = new System.Drawing.Size(480, 320);
+        MinimumSize = new System.Drawing.Size(560, 320);
         if (AppIcon.TryLoad() is System.Drawing.Icon appIcon)
             Icon = appIcon;
 
@@ -28,7 +28,7 @@ internal sealed class SetupForm : Form
         {
             Text = "These are the Steam shortcuts found on your Desktop. Check the ones you want " +
                    "to show a \"Game Loading\" popup for, then click Convert. Already-converted " +
-                   "shortcuts are checked to be restored instead.",
+                   "shortcuts are checked to be restored or pinned to the taskbar instead.",
             Dock = DockStyle.Top,
             Height = 60,
             Padding = new Padding(10, 10, 10, 0),
@@ -55,11 +55,15 @@ internal sealed class SetupForm : Form
         var restoreButton = new Button { Text = "Restore", AutoSize = true };
         restoreButton.Click += (_, _) => RestoreChecked();
 
+        var pinButton = new Button { Text = "Pin to Taskbar", AutoSize = true };
+        pinButton.Click += (_, _) => PinChecked();
+
         var convertButton = new Button { Text = "Convert", AutoSize = true };
         convertButton.Click += (_, _) => ConvertChecked();
 
         buttonPanel.Controls.Add(rescanButton);
         buttonPanel.Controls.Add(restoreButton);
+        buttonPanel.Controls.Add(pinButton);
         buttonPanel.Controls.Add(convertButton);
 
         Controls.Add(_list);
@@ -134,6 +138,39 @@ internal sealed class SetupForm : Form
         RescanShortcuts();
         MessageBox.Show(this, $"Restored {count} shortcut(s) to their original target.",
             "Done", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    private void PinChecked()
+    {
+        int pinned = 0;
+        int failed = 0;
+        foreach (DetectedShortcut shortcut in CheckedItemsOf(alreadyConverted: true))
+        {
+            if (TaskbarPinHelper.TryPin(shortcut.ShortcutPath))
+                pinned++;
+            else
+                failed++;
+        }
+
+        if (pinned == 0 && failed == 0)
+        {
+            MessageBox.Show(this,
+                "Check the already-converted shortcut(s) you want to pin first, then click Pin to Taskbar.",
+                "Nothing to pin", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        string message = $"Pinned {pinned} shortcut(s) to the taskbar.";
+        if (failed > 0)
+        {
+            message += $"\n\n{failed} couldn't be pinned automatically - this relies on an " +
+                       "unsupported Windows feature that doesn't work on every system. You can " +
+                       "instead right-click the shortcut on your Desktop yourself and choose " +
+                       "\"Pin to taskbar\" (under \"Show more options\" on Windows 11).";
+        }
+
+        MessageBox.Show(this, message, "Pin to Taskbar", MessageBoxButtons.OK,
+            failed > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
     }
 
     private System.Collections.Generic.IEnumerable<DetectedShortcut> CheckedItemsOf(bool alreadyConverted)
