@@ -42,7 +42,7 @@ shortcut and the game window appearing.
 
 ## Installing
 
-Download the latest `SteamGameLoadingPopup-Setup.exe` from the
+Download the latest `SteamGameLoadingPopup-Setup-<version>.exe` from the
 [Releases](../../releases) page and run it. At the end of setup you'll be
 offered the chance to open the shortcut setup tool right away.
 
@@ -63,9 +63,10 @@ iscc "/DMyAppVersion=1.0.0" installer\setup.iss
 
 Push a tag like `v1.0.0` and the `Build and Release` workflow
 (`.github/workflows/release.yml`) will build the app, compile the Inno Setup
-installer, and attach `SteamGameLoadingPopup-Setup.exe` to a GitHub Release
-for that tag automatically (creating the release if it doesn't exist yet, or
-updating it - e.g. adding the asset - if it does).
+installer, and attach `SteamGameLoadingPopup-Setup-<version>.exe` (e.g.
+`SteamGameLoadingPopup-Setup-1.0.0.exe`) to a GitHub Release for that tag
+automatically (creating the release if it doesn't exist yet, or updating it
+- e.g. adding the asset - if it does).
 
 You can also trigger it manually from the Actions tab (`workflow_dispatch`)
 and type a version number (e.g. `1.0.0`) into the "Run workflow" box - this
