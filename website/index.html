@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Steam Loading Popups — a loading screen for your Steam games</title>
+  <meta name="description" content="A small Windows app that shows a loading popup the moment you launch a Steam game, and closes it automatically once the game has actually started." />
+
+  <meta property="og:title" content="Steam Loading Popups" />
+  <meta property="og:description" content="A loading popup for your Steam games — covers the gap between double-clicking a shortcut and the game actually opening." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/assets/hero.png" />
+
+  <link rel="icon" href="/assets/favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="/assets/icon-512.png" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a class="brand" href="/">
+        <svg class="brand-mark" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect width="32" height="32" rx="9" fill="#1f1f24" />
+          <circle cx="16" cy="16" r="9" stroke="rgba(255,255,255,0.25)" stroke-width="3" />
+          <path d="M16 7a9 9 0 0 1 6.36 15.36" stroke="#66c0f4" stroke-width="3" stroke-linecap="round" />
+        </svg>
+        Steam Loading Popups
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="https://github.com/bobchomp/gameloading" target="_blank" rel="noopener">
+          <span class="hide-mobile">GitHub</span>
+        </a>
+        <a class="btn btn-primary" href="/download">Download</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container hero-inner">
+      <div>
+        <span class="eyebrow">Free &amp; open source</span>
+        <h1>A loading screen for the gap Steam doesn't cover.</h1>
+        <p class="lead">
+          Double-click a game shortcut and there's often a long, silent pause before
+          anything happens. Steam Loading Popups shows a simple "Game Loading…" popup
+          the moment you launch, and closes itself the instant the game actually starts.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="/download">Download for Windows</a>
+          <a class="btn btn-secondary" href="https://github.com/bobchomp/gameloading" target="_blank" rel="noopener">View on GitHub</a>
+        </div>
+      </div>
+      <div>
+        <img class="hero-image" src="/assets/hero.png" alt="A dark loading popup with a spinner, reading 'Launching… Half-Life: Alyx', with a Cancel button" width="780" height="360" />
+      </div>
+    </div>
+  </header>
+
+  <section>
+    <div class="container">
+      <div class="section-head">
+        <h2>What it does</h2>
+        <p>A tiny background app that wraps your existing Steam desktop shortcuts — nothing more.</p>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <div class="icon" aria-hidden="true">⏳</div>
+          <h3>Loading popup</h3>
+          <p>Shows a spinner and the game's name the instant you launch, so you know something is actually happening.</p>
+        </div>
+        <div class="card">
+          <div class="icon" aria-hidden="true">✓</div>
+          <h3>Closes itself</h3>
+          <p>Watches Steam's own "running" signal and disappears the moment the game has actually started — no guessing, no timers to configure.</p>
+        </div>
+        <div class="card">
+          <div class="icon" aria-hidden="true">↺</div>
+          <h3>Fully reversible</h3>
+          <p>Converting a shortcut keeps its name and icon, and backs up the original so you can restore it any time from the same setup tool.</p>
+        </div>
+        <div class="card">
+          <div class="icon" aria-hidden="true">📌</div>
+          <h3>Pin to taskbar</h3>
+          <p>Optionally pin a converted shortcut straight to the taskbar, just like any other program.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <div class="section-head">
+        <h2>How it works</h2>
+        <p>One quick setup step, then it just works from your existing shortcuts.</p>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <span class="step-number">1</span>
+          <h3>Install &amp; run setup</h3>
+          <p>Install the app, then open "Steam Loading Popups" from the Start Menu. It scans your Desktop for existing Steam shortcuts.</p>
+        </div>
+        <div class="step">
+          <span class="step-number">2</span>
+          <h3>Convert your shortcuts</h3>
+          <p>Check the games you want and click Convert. Each shortcut keeps its name and icon — only what it launches changes.</p>
+        </div>
+        <div class="step">
+          <span class="step-number">3</span>
+          <h3>Launch as normal</h3>
+          <p>Double-click the shortcut like you always have. The popup appears, then gets out of the way once the game is up.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <div class="cta-band">
+        <h2>Ready to try it?</h2>
+        <p>Free, open source, and takes about a minute to set up.</p>
+        <a class="btn btn-primary" href="/download">Download for Windows</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container footer-inner">
+      <span>Steam Loading Popups is an independent, fan-made tool and isn't affiliated with Valve or Steam.</span>
+      <div class="footer-links">
+        <a href="https://github.com/bobchomp/gameloading" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/bobchomp/gameloading/releases" target="_blank" rel="noopener">Releases</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
