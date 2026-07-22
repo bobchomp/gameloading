@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Download — Steam Loading Popups</title>
+  <meta name="description" content="Download the latest version of Steam Loading Popups for Windows." />
+
+  <meta property="og:title" content="Download Steam Loading Popups" />
+  <meta property="og:description" content="Get the latest Windows installer for Steam Loading Popups." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/assets/hero.png" />
+
+  <link rel="icon" href="/assets/favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="/assets/icon-512.png" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a class="brand" href="/">
+        <svg class="brand-mark" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect width="32" height="32" rx="9" fill="#1f1f24" />
+          <circle cx="16" cy="16" r="9" stroke="rgba(255,255,255,0.25)" stroke-width="3" />
+          <path d="M16 7a9 9 0 0 1 6.36 15.36" stroke="#66c0f4" stroke-width="3" stroke-linecap="round" />
+        </svg>
+        Steam Loading Popups
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="https://github.com/bobchomp/gameloading" target="_blank" rel="noopener">
+          <span class="hide-mobile">GitHub</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero" style="padding-bottom: 20px;">
+    <div class="container" style="text-align: center;">
+      <span class="eyebrow">Windows 10 &amp; 11</span>
+      <h1>Download Steam Loading Popups</h1>
+      <p class="lead" style="margin-left: auto; margin-right: auto;">
+        Free installer, no account required. Runs a short setup step after
+        install to convert your Steam shortcuts.
+      </p>
+    </div>
+  </header>
+
+  <section style="padding-top: 0;">
+    <div class="container">
+      <div class="download-card">
+        <p class="platform">Windows installer (.exe)</p>
+        <a id="download-btn" class="btn btn-primary btn-block" href="https://github.com/bobchomp/gameloading/releases/latest" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span id="download-label">Download for Windows</span>
+        </a>
+        <p class="version" id="version-text">Looking up the latest version…</p>
+        <p class="meta" id="meta-text"></p>
+      </div>
+
+      <p class="download-note">
+        By downloading you agree this is a small, open-source community tool —
+        not an official Valve or Steam product.
+      </p>
+
+      <div class="requirements">
+        <h3>Before you install</h3>
+        <ul>
+          <li>Windows 10 or 11 (64-bit)</li>
+          <li>Steam already installed, with at least one game on your Desktop as a shortcut</li>
+          <li>After installing, run "Steam Loading Popups" from the Start Menu once to convert the shortcuts you want</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container footer-inner">
+      <span>Steam Loading Popups is an independent, fan-made tool and isn't affiliated with Valve or Steam.</span>
+      <div class="footer-links">
+        <a href="https://github.com/bobchomp/gameloading" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/bobchomp/gameloading/releases" target="_blank" rel="noopener">Releases</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (async () => {
+      const REPO = "bobchomp/gameloading";
+      const btn = document.getElementById("download-btn");
+      const label = document.getElementById("download-label");
+      const versionText = document.getElementById("version-text");
+      const metaText = document.getElementById("meta-text");
+
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`);
+        if (!res.ok) throw new Error("GitHub API request failed");
+
+        const release = await res.json();
+        const asset = (release.assets || []).find((a) =>
+          a.name.toLowerCase().endsWith(".exe")
+        );
+        if (!asset) throw new Error("No installer asset on the latest release");
+
+        const version = release.tag_name.replace(/^v/, "");
+        const sizeMb = (asset.size / (1024 * 1024)).toFixed(1);
+        const published = new Date(release.published_at).toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+
+        btn.href = asset.browser_download_url;
+        btn.removeAttribute("target");
+        btn.removeAttribute("rel");
+        label.textContent = `Download v${version} for Windows`;
+        versionText.textContent = `Version ${version} · ${sizeMb} MB`;
+        metaText.textContent = `Released ${published}`;
+      } catch (err) {
+        versionText.textContent = "Couldn't look up the latest version automatically.";
+        metaText.innerHTML =
+          'The button above will take you to the ' +
+          '<a href="https://github.com/bobchomp/gameloading/releases">GitHub Releases page</a> instead.';
+      }
+    })();
+  </script>
+
+</body>
+</html>
