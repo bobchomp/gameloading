@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
@@ -9,23 +8,23 @@ using Timer = System.Windows.Forms.Timer;
 namespace SteamGameLoader;
 
 /// <summary>
-/// The "Game Loading..." popup. Launches the Steam game, then polls Steam's own
-/// "Running" registry flag every 500ms and closes itself as soon as the game
-/// actually starts, with a safety-net timeout and a manual Cancel button.
+/// The "Game Loading..." popup. Starts the game via the given launcher, polls
+/// it every 500ms, and closes itself once it reports the game has actually
+/// launched, with a safety-net timeout and a manual Cancel button.
 /// </summary>
 internal sealed class LoadingForm : Form
 {
     private static readonly TimeSpan SafetyTimeout = TimeSpan.FromSeconds(90);
 
-    private readonly uint _appId;
+    private readonly IGameLauncher _launcher;
     private readonly Timer _pollTimer;
     private readonly DateTime _startedAt = DateTime.UtcNow;
     private Point _dragStart;
     private bool _dragging;
 
-    public LoadingForm(uint appId)
+    public LoadingForm(IGameLauncher launcher)
     {
-        _appId = appId;
+        _launcher = launcher;
 
         FormBorderStyle = FormBorderStyle.None;
         StartPosition = FormStartPosition.CenterScreen;
@@ -40,8 +39,6 @@ internal sealed class LoadingForm : Form
 
         var spinner = new SpinnerControl { Size = new Size(48, 48), Location = new Point(24, 28) };
 
-        string gameName = SteamHelper.TryGetGameName(appId) ?? $"Steam game (AppID {appId})";
-
         var titleLabel = new Label
         {
             Text = "Launching…",
@@ -53,7 +50,7 @@ internal sealed class LoadingForm : Form
 
         var subtitleLabel = new Label
         {
-            Text = gameName,
+            Text = launcher.DisplayName,
             ForeColor = Color.FromArgb(190, 190, 190),
             Font = new Font("Segoe UI", 9.5F),
             Location = new Point(88, 56),
@@ -88,33 +85,16 @@ internal sealed class LoadingForm : Form
                 Close();
         };
 
-        LaunchGame(appId);
+        _launcher.Start();
 
         _pollTimer = new Timer { Interval = 500 };
         _pollTimer.Tick += PollTimer_Tick;
         _pollTimer.Start();
     }
 
-    private static void LaunchGame(uint appId)
-    {
-        try
-        {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = $"steam://rungameid/{appId}",
-                UseShellExecute = true,
-            });
-        }
-        catch
-        {
-            // If Steam itself can't be found/started there is nothing more we can
-            // do here; the safety timeout will close the popup regardless.
-        }
-    }
-
     private void PollTimer_Tick(object? sender, EventArgs e)
     {
-        if (SteamHelper.IsGameRunning(_appId))
+        if (_launcher.HasLaunched())
         {
             Close();
             return;

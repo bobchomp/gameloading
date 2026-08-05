@@ -26,9 +26,10 @@ internal sealed class SetupForm : Form
 
         var instructions = new Label
         {
-            Text = "These are the Steam shortcuts found on your Desktop. Check the ones you want " +
-                   "to show a \"Game Loading\" popup for, then click Convert. Already-converted " +
-                   "shortcuts are checked to be restored or pinned to the taskbar instead.",
+            Text = "These are the Steam and Epic Games shortcuts found on your Desktop. Check the " +
+                   "ones you want to show a \"Game Loading\" popup for, then click Convert. " +
+                   "Already-converted shortcuts are checked to be restored or pinned to the " +
+                   "taskbar instead.",
             Dock = DockStyle.Top,
             Height = 60,
             Padding = new Padding(10, 10, 10, 0),
@@ -81,8 +82,10 @@ internal sealed class SetupForm : Form
         if (shortcuts.Count == 0)
         {
             MessageBox.Show(this,
-                "No Steam game shortcuts were found on your Desktop.\n\n" +
-                "In Steam, right-click a game -> Manage -> Add desktop shortcut, then click Rescan here.",
+                "No Steam or Epic Games shortcuts were found on your Desktop.\n\n" +
+                "In Steam, right-click a game -> Manage -> Add desktop shortcut. In the Epic " +
+                "Games Launcher, right-click a game in your Library -> Create Shortcut. Then " +
+                "click Rescan here.",
                 "No shortcuts found", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
@@ -230,9 +233,14 @@ internal sealed class SetupForm : Form
         }
         else
         {
-            iconLocation = SteamHelper.GetSteamInstallPath() is string steamPath
-                ? Path.Combine(steamPath, "steam.exe")
-                : Application.ExecutablePath;
+            iconLocation = shortcut.Platform switch
+            {
+                GamePlatform.Steam => SteamHelper.GetSteamInstallPath() is string steamPath
+                    ? Path.Combine(steamPath, "steam.exe")
+                    : Application.ExecutablePath,
+                GamePlatform.Epic => EpicHelper.TryGetLauncherPath() ?? Application.ExecutablePath,
+                _ => Application.ExecutablePath,
+            };
             iconIndex = 0;
         }
 
@@ -251,7 +259,7 @@ internal sealed class SetupForm : Form
         ShellLinkHelper.Write(
             lnkPath,
             targetPath: Application.ExecutablePath,
-            arguments: shortcut.AppId.ToString(),
+            arguments: shortcut.LauncherArgument,
             iconLocation: iconLocation,
             iconIndex: iconIndex,
             workingDirectory: Path.GetDirectoryName(Application.ExecutablePath) ?? "");
