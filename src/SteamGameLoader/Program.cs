@@ -1,12 +1,22 @@
+using System.Threading;
 using System.Windows.Forms;
 
 namespace SteamGameLoader;
 
 internal static class Program
 {
+    /// <summary>
+    /// Referenced by installer/setup.iss's AppMutex, so Inno Setup can detect a
+    /// running instance and prompt to close it - a backstop for the self-update
+    /// flow (UpdateAvailableForm) alongside its own explicit Environment.Exit.
+    /// </summary>
+    private const string AppMutexName = "SteamGameLoaderAppMutex";
+
     [STAThread]
     private static void Main(string[] args)
     {
+        using var appMutex = new Mutex(initiallyOwned: false, name: AppMutexName);
+
         ApplicationConfiguration.Initialize();
 
         // Shortcuts created by the setup tool invoke us as:
@@ -17,7 +27,16 @@ internal static class Program
         IGameLauncher? launcher = args.Length >= 1 ? TryParseLauncher(args[0]) : null;
         if (launcher is not null)
         {
-            Application.Run(new LoadingForm(launcher));
+            var loadingForm = new LoadingForm(launcher);
+            Application.Run(loadingForm);
+
+            // Checked in the background while the popup was up - only shown if
+            // it happened to finish in time, never something the game launch
+            // waits on.
+            if (loadingForm.PendingUpdate is UpdateChecker.UpdateInfo update)
+            {
+                Application.Run(new UpdateAvailableForm(update));
+            }
         }
         else
         {

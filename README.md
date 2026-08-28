@@ -53,6 +53,14 @@ double-clicking the shortcut and the game window appearing.
    right-click the converted Desktop shortcut yourself and choose "Pin to
    taskbar" (under "Show more options" on Windows 11) - that always works,
    since it's just a normal shortcut pointing at this app.
+6. **Auto-update:** both the loading popup and the setup tool check GitHub's
+   latest release in the background (never blocking a game launch - if the
+   check hasn't finished by the time the popup would otherwise close, it just
+   doesn't show a prompt that time). If a newer version is found, a small
+   "Update available" popup offers **Update Now**, which downloads that
+   release's installer, launches it, and closes this app so the installer can
+   overwrite it - or **Later**, which remembers not to prompt again for that
+   same version (a genuinely newer release will still prompt).
 
 ## Installing
 
@@ -102,3 +110,7 @@ verifying the app still compiles without publishing anything.
   If Epic's manifest can't be found or is missing the expected fields, the
   popup closes immediately instead of waiting, since there's no reliable
   signal left to watch for.
+- The update check makes a background request to GitHub's public API on
+  every launch. It's designed to never delay the game or the popup closing,
+  and fails silently if there's no internet access or GitHub is unreachable
+  - but it is still a network call made each time you launch a game.

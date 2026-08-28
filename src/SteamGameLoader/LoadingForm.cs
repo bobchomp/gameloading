@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Timer = System.Windows.Forms.Timer;
 
@@ -21,6 +22,14 @@ internal sealed class LoadingForm : Form
     private readonly DateTime _startedAt = DateTime.UtcNow;
     private Point _dragStart;
     private bool _dragging;
+
+    /// <summary>
+    /// Set if a background update check completes, with a newer version
+    /// found, before this popup closes. Never awaited or blocked on - if the
+    /// check hasn't finished by the time the popup would otherwise close,
+    /// this game's launch just doesn't get an update prompt this time.
+    /// </summary>
+    public UpdateChecker.UpdateInfo? PendingUpdate { get; private set; }
 
     public LoadingForm(IGameLauncher launcher)
     {
@@ -86,10 +95,18 @@ internal sealed class LoadingForm : Form
         };
 
         _launcher.Start();
+        _ = CheckForUpdateInBackgroundAsync();
 
         _pollTimer = new Timer { Interval = 500 };
         _pollTimer.Tick += PollTimer_Tick;
         _pollTimer.Start();
+    }
+
+    private async Task CheckForUpdateInBackgroundAsync()
+    {
+        UpdateChecker.UpdateInfo? update = await UpdateChecker.CheckAsync();
+        if (update is not null && !UpdateDismissal.WasDismissed(update.Version))
+            PendingUpdate = update;
     }
 
     private void PollTimer_Tick(object? sender, EventArgs e)
