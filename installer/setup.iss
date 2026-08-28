@@ -13,6 +13,9 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\SteamGameLoader
 DefaultGroupName=Steam Loading Popups
 DisableProgramGroupPage=yes
+; Matches Program.AppMutexName - lets Setup detect a running instance (e.g.
+; via the in-app self-update flow) and prompt to close it before installing.
+AppMutex=SteamGameLoaderAppMutex
 SetupIconFile=..\src\SteamGameLoader\app.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 OutputDir=output

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace SteamGameLoader;
@@ -72,6 +73,17 @@ internal sealed class SetupForm : Form
         Controls.Add(instructions);
 
         Load += (_, _) => RescanShortcuts();
+        Load += (_, _) => _ = CheckForUpdateAsync();
+    }
+
+    private async Task CheckForUpdateAsync()
+    {
+        UpdateChecker.UpdateInfo? update = await UpdateChecker.CheckAsync();
+        if (update is null || UpdateDismissal.WasDismissed(update.Version) || IsDisposed)
+            return;
+
+        using var updateForm = new UpdateAvailableForm(update);
+        updateForm.ShowDialog(this);
     }
 
     private void RescanShortcuts()
